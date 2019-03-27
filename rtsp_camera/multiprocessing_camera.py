@@ -12,7 +12,8 @@ def produce(q, name, pwd, ip, channel=1):
     while True:
         is_opened, frame = cap.read()
         q.put(frame) if is_opened else None
-        #q.get() if q.qsize() > 1 else None
+        # 
+        q.get() if q.qsize() > 1 else None
     cap.release()
 
 
