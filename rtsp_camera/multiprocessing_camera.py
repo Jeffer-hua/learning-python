@@ -6,6 +6,8 @@ import os
 
 
 def produce(q, name, pwd, ip, channel=1):
+    #增加nvr取流的协议,也是基于rtsp协议而来
+    #f"rtsp://{camera_name}:{camera_pwd}@{nvr_ip}:554/cam/realmonitor?channel={channel}&subtype=0"
     cap = cv2.VideoCapture("rtsp://%s:%s@%s//Streaming/Channels/%d" % (name, pwd, ip, channel))
     while True:
         is_opened, frame = cap.read()
