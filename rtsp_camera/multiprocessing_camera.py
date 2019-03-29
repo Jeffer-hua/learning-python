@@ -10,30 +10,36 @@ def produce(q, name, pwd, ip, channel=1):
     #f"rtsp://{camera_name}:{camera_pwd}@{nvr_ip}:554/cam/realmonitor?channel={channel}&subtype=0"
     cap = cv2.VideoCapture("rtsp://%s:%s@%s//Streaming/Channels/%d" % (name, pwd, ip, channel))
     while True:
+
         is_opened, frame = cap.read()
-        q.put(frame) if is_opened else None
-        # 
+        detection_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
+        if is_opened:
+            q.put((frame,detection_time))
+        else:
+            q.put((None,None))
         q.get() if q.qsize() > 1 else None
-    cap.release()
+    # cap.release()
 
 
 def customer(q, window_name):
     cv2.namedWindow(window_name, flags=cv2.WINDOW_FREERATIO)
     while True:
-        frame = q.get()
-        cv2.imshow(window_name, frame)
+        (frame,detection_time) = q.get()
+        if isinstance(frame,np.ndarray):
+            cv2.putText(frame,str(detection_time),(300,300),cv2.FONT_HERSHEY_COMPLEX,2,(0,255,0),2)
+            cv2.imshow(window_name, frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
     cv2.destroyAllWindows()
 
 
 def run():  # single camera
-    user_name, user_pwd, camera_ip = "admin", "!QAZ2wsx3edc", "192.168.1.164"
-    mp.set_start_method(method="spawn")
+    user_name, user_pwd, camera_ip = "admin", "!QAZ2wsx3edc", "192.168.1.169"
+    #mp.set_start_method(method="spawn")
     # 由于opencv不能直接设置fps,使用time.sleep会出现掉帧的现象
     # 目前设置队列size小一点，去处理最新的几张图片中的一张。
     # eg: fps=25, queue.qsize=5 ,至少能保证1秒有机会处理五张图片。
-    queue = mp.Queue(maxsize=5)
+    queue = mp.Queue(maxsize=2)
     processes = [mp.Process(target=produce, args=(queue, user_name, user_pwd, camera_ip)),
                  mp.Process(target=customer, args=(queue, camera_ip))]
 
