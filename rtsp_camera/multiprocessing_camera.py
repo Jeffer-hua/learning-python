@@ -18,14 +18,18 @@ def produce(q, name, pwd, ip, channel=1):
         else:
             q.put((None,None))
         # 保证实时显示最新的图片
+        #time.sleep(1)
         q.get() if q.qsize() > 1 else None
+        #print("produce qsize:",q.qsize())
     # cap.release()
 
 
 def customer(q, window_name):
     cv2.namedWindow(window_name, flags=cv2.WINDOW_FREERATIO)
     while True:
+        #print("customer qsize:",q.qsize())
         (frame,detection_time) = q.get()
+        #time.sleep(2)
         if isinstance(frame,np.ndarray):
             cv2.putText(frame,str(detection_time),(300,300),cv2.FONT_HERSHEY_COMPLEX,2,(0,255,0),2)
             cv2.imshow(window_name, frame)
@@ -35,12 +39,12 @@ def customer(q, window_name):
 
 
 def run():  # single camera
-    user_name, user_pwd, camera_ip = "admin", "!QAZ2wsx3edc", "192.168.1.169"
+    user_name, user_pwd, camera_ip = "admin", "!QAZ2wsx3edc", "192.168.1.100"
     #mp.set_start_method(method="spawn")
     # 由于opencv不能直接设置fps,使用time.sleep会出现掉帧的现象
     # 目前设置队列size小一点，去处理最新的几张图片中的一张。
     # eg: fps=25, queue.qsize=2 ,至少能保证1秒有机会处理2张图片。
-    queue = mp.Queue(maxsize=2)
+    queue = mp.Queue()
     processes = [mp.Process(target=produce, args=(queue, user_name, user_pwd, camera_ip)),
                  mp.Process(target=customer, args=(queue, camera_ip))]
 
@@ -59,7 +63,7 @@ def run_multi_camera():
         "192.168.1.172"
     ]
 
-    queues = [mp.Queue(maxsize=5) for _ in camera_ip_list]
+    queues = [mp.Queue(maxsize=2) for _ in camera_ip_list]
 
     processes = []
     for queue, camera_ip in zip(queues, camera_ip_list):
